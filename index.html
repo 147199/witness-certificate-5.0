@@ -6,7 +6,6 @@
     <title>同济大学对口支援井冈山大学20周年 - 见证者证书</title>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <style>
-        /* 之前的CSS样式保持不变 */
         * {
             margin: 0;
             padding: 0;
@@ -202,6 +201,7 @@
             border-radius: 15px;
             overflow: hidden;
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            background: #fff;
         }
         
         .certificate-template {
@@ -214,9 +214,9 @@
         .student-name-overlay {
             position: absolute;
             top: 33%;
-            left: 41%;
+            left: 50%;
             transform: translateX(-50%);
-            font-size: 18px;
+            font-size: 20px;
             font-weight: bold;
             color: #000;
             text-align: center;
@@ -329,6 +329,16 @@
             border-radius: 10px;
             transition: width 0.3s ease;
         }
+        
+        .network-tips {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+            font-size: 14px;
+            color: #0c5460;
+        }
     </style>
 </head>
 <body>
@@ -412,6 +422,13 @@
             <h2 class="section-title">您的见证者证书</h2>
             <p style="margin-bottom: 20px; color: #666; text-align: center; font-size: 15px;">恭喜您完成见证，以下是您的专属证书</p>
             
+            <div class="network-tips" id="networkTips">
+                <p><strong>📶 网络提示：</strong></p>
+                <p>• 联通用户建议连接WiFi使用</p>
+                <p>• 移动用户如遇生成问题，请尝试切换网络</p>
+                <p>• 如多次失败，请刷新页面重试</p>
+            </div>
+            
             <div class="loading" id="loadingMessage">
                 <div class="loading-spinner"></div>
                 <p style="font-size: 16px; margin-top: 10px;">正在生成证书，请稍候...</p>
@@ -440,8 +457,9 @@
             
             <div class="action-buttons">
                 <button id="downloadBtn" class="btn download-btn">💾 保存证书图片</button>
+                <button id="retryBtn" class="btn btn-secondary" style="display: none;">🔄 重新生成证书</button>
                 <button id="shareBtn" class="btn btn-success">📤 分享证书</button>
-                <button id="newCertificate" class="btn btn-secondary">🔄 重新生成</button>
+                <button id="newCertificate" class="btn btn-secondary">🔄 重新开始</button>
             </div>
         </div>
     </div>
@@ -451,26 +469,47 @@
         let userInfo = {};
         let preloadedImage = null;
         let isWeChat = /MicroMessenger/i.test(navigator.userAgent);
+        let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-        // 预加载证书模板图片 - 在这里修改图片地址！
+        // 多CDN图片源 - 提高访问成功率
+        const imageSources = [
+            'https://i.ibb.co/B20wSZpn/image.jpg', // 主图源
+            'https://images2.imgbox.com/5f/3a/ABC12345_o.jpg', // 备用图源1
+            'https://pic.imgdb.cn/item/1234567890abc.jpg' // 备用图源2
+        ];
+
+        // 智能图片预加载
         function preloadCertificateImage() {
-            preloadedImage = new Image();
-            // ================================
-            // 在这里修改您的证书模板图片地址！
-            // ================================
-            preloadedImage.src = 'https://i.ibb.co/xqQ1Wmdw/image.jpg'; // 替换为您的图片URL
-            preloadedImage.onload = function() {
-                console.log('证书模板图片预加载完成');
-            };
-            preloadedImage.onerror = function() {
-                console.error('证书模板图片加载失败');
-            };
+            return new Promise((resolve, reject) => {
+                preloadedImage = new Image();
+                let currentIndex = 0;
+                
+                function tryNextSource() {
+                    if (currentIndex >= imageSources.length) {
+                        reject(new Error('所有图片源都加载失败'));
+                        return;
+                    }
+                    
+                    preloadedImage.src = imageSources[currentIndex] + '?t=' + Date.now();
+                    currentIndex++;
+                    
+                    preloadedImage.onload = () => {
+                        console.log('证书模板图片预加载成功');
+                        resolve(preloadedImage);
+                    };
+                    
+                    preloadedImage.onerror = () => {
+                        console.warn(`图片源 ${currentIndex} 加载失败，尝试下一个`);
+                        setTimeout(tryNextSource, 500);
+                    };
+                }
+                
+                tryNextSource();
+            });
         }
 
         // 页面加载时预加载图片
         window.addEventListener('load', function() {
-            preloadCertificateImage();
-            
             // 祝福语实时预览
             document.getElementById('blessing').addEventListener('input', function() {
                 const blessing = this.value || '祝福语将显示在这里...';
@@ -481,6 +520,11 @@
             if (isWeChat) {
                 document.getElementById('wechatTips').style.display = 'block';
             }
+            
+            // 预加载图片
+            preloadCertificateImage().catch(error => {
+                console.error('图片预加载失败:', error);
+            });
         });
 
         // 第一步：信息提交
@@ -538,7 +582,22 @@
             // 模拟进度条
             simulateProgress();
             
-            // 立即开始生成证书
+            // 确保图片已加载
+            if (!preloadedImage || !preloadedImage.complete) {
+                preloadCertificateImage().then(() => {
+                    createCertificate();
+                }).catch(error => {
+                    console.error('图片加载失败:', error);
+                    alert('证书模板加载失败，请检查网络连接或刷新页面重试');
+                    document.getElementById('retryBtn').style.display = 'block';
+                });
+            } else {
+                createCertificate();
+            }
+        }
+        
+        // 创建证书显示
+        function createCertificate() {
             const certificateContainer = document.getElementById('certificateForDownload');
             certificateContainer.innerHTML = `
                 <div style="position: relative; width: 100%; margin: 0 auto;">
@@ -546,21 +605,31 @@
                          alt="见证者证书模板" 
                          style="width: 100%; height: auto; display: block;"
                          onload="hideLoading()"
-                         onerror="handleImageError()">
+                         onerror="handleImageError()"
+                         crossorigin="anonymous">
                     <div class="student-name-overlay">
                         ${userInfo.name}
                     </div>
                 </div>
             `;
             
-            // 如果图片已经预加载完成，立即隐藏加载提示
-            if (preloadedImage.complete) {
-                setTimeout(hideLoading, 500);
-            }
-            
             // 记录生成时间
             userInfo.certificateGenerated = new Date().toLocaleString('zh-CN');
         }
+        
+        // 重新生成证书
+        document.getElementById('retryBtn').addEventListener('click', function() {
+            document.getElementById('loadingMessage').style.display = 'block';
+            document.getElementById('progressContainer').style.display = 'block';
+            document.getElementById('successMessage').style.display = 'none';
+            document.getElementById('retryBtn').style.display = 'none';
+            
+            preloadCertificateImage().then(() => {
+                createCertificate();
+            }).catch(error => {
+                alert('仍然无法加载证书模板，请切换网络环境或稍后重试');
+            });
+        });
         
         // 模拟进度条
         function simulateProgress() {
@@ -587,10 +656,14 @@
         // 图片加载失败的处理
         function handleImageError() {
             console.error('证书模板图片加载失败');
-            document.getElementById('loadingMessage').innerHTML = '<p>❌ 图片加载失败，请检查网络连接</p>';
+            document.getElementById('loadingMessage').innerHTML = `
+                <p>❌ 图片加载失败</p>
+                <p style="font-size: 14px; margin-top: 10px;">请检查网络连接或点击重新生成</p>
+            `;
+            document.getElementById('retryBtn').style.display = 'block';
         }
         
-        // 下载证书功能
+        // 下载证书功能 - 优化移动端兼容性
         document.getElementById('downloadBtn').addEventListener('click', function() {
             const certificateContainer = document.getElementById('certificateForDownload');
             
@@ -599,34 +672,43 @@
             document.getElementById('loadingMessage').innerHTML = `
                 <div class="loading-spinner"></div>
                 <p style="font-size: 16px; margin-top: 10px;">正在生成高清证书图片...</p>
+                <p style="font-size: 14px; margin-top: 5px; color: #666;">这可能需要几秒钟，请耐心等待</p>
             `;
             
-            // 使用html2canvas将证书转换为图片
-            html2canvas(certificateContainer, {
-                scale: isWeChat ? 1.2 : 1.5,
+            // 优化html2canvas配置
+            const options = {
+                scale: isMobile ? 2 : 3, // 移动端提高分辨率
                 useCORS: true,
-                allowTaint: true,
+                allowTaint: false, // 避免污染canvas
                 logging: false,
                 backgroundColor: '#ffffff',
-                removeContainer: true,
-                async: true,
                 width: certificateContainer.scrollWidth,
-                height: certificateContainer.scrollHeight
-            }).then(canvas => {
+                height: certificateContainer.scrollHeight,
+                imageTimeout: 30000, // 增加超时时间
+                removeContainer: true,
+                // 移动端优化配置
+                onclone: function(clonedDoc) {
+                    const img = clonedDoc.querySelector('img');
+                    if (img) {
+                        img.setAttribute('crossOrigin', 'anonymous');
+                    }
+                }
+            };
+            
+            // 使用html2canvas将证书转换为图片
+            html2canvas(certificateContainer, options).then(canvas => {
                 // 隐藏加载提示
                 document.getElementById('loadingMessage').style.display = 'none';
                 
                 try {
-                    // 创建下载链接
-                    const link = document.createElement('a');
-                    link.download = `见证者证书-${userInfo.name}.png`;
-                    link.href = canvas.toDataURL('image/png');
-                    
-                    if (isWeChat) {
-                        // 微信环境中，创建图片显示供用户长按保存
-                        handleWeChatDownload(canvas);
+                    if (isWeChat || isMobile) {
+                        // 移动端和微信环境，显示图片供用户长按保存
+                        handleMobileDownload(canvas);
                     } else {
-                        // 普通浏览器环境，直接下载
+                        // PC端直接下载
+                        const link = document.createElement('a');
+                        link.download = `同济大学对口支援井冈山大学20周年-见证者证书-${userInfo.name}.png`;
+                        link.href = canvas.toDataURL('image/png');
                         document.body.appendChild(link);
                         link.click();
                         document.body.removeChild(link);
@@ -637,28 +719,18 @@
                     
                 } catch (error) {
                     console.error('下载失败:', error);
-                    // 微信环境下的备选方案
-                    if (isWeChat) {
-                        alert('请长按证书图片，选择"保存到手机"进行下载');
-                    } else {
-                        alert('下载失败，请长按证书截图保存');
-                    }
+                    handleDownloadError();
                 }
                 
             }).catch(error => {
                 console.error('证书生成失败:', error);
                 document.getElementById('loadingMessage').style.display = 'none';
-                if (isWeChat) {
-                    alert('生成失败，请长按证书区域截图保存');
-                } else {
-                    alert('生成失败，请尝试截图保存证书');
-                }
+                handleDownloadError();
             });
         });
 
-        // 微信环境下载处理
-        function handleWeChatDownload(canvas) {
-            // 创建图片显示区域
+        // 移动端下载处理
+        function handleMobileDownload(canvas) {
             const imageContainer = document.createElement('div');
             imageContainer.style.cssText = `
                 position: fixed;
@@ -666,49 +738,52 @@
                 left: 0;
                 width: 100%;
                 height: 100%;
-                background: rgba(0,0,0,0.8);
+                background: rgba(0,0,0,0.95);
                 display: flex;
                 flex-direction: column;
                 align-items: center;
                 justify-content: center;
                 z-index: 10000;
+                padding: 20px;
             `;
             
             const image = new Image();
             image.src = canvas.toDataURL('image/png');
             image.style.cssText = `
-                max-width: 90%;
+                max-width: 100%;
                 max-height: 70%;
                 border-radius: 10px;
-                box-shadow: 0 0 20px rgba(255,255,255,0.3);
+                box-shadow: 0 0 30px rgba(255,255,255,0.2);
             `;
             
             const tips = document.createElement('div');
             tips.style.cssText = `
                 color: white;
                 text-align: center;
-                margin-top: 20px;
+                margin-top: 25px;
                 font-size: 16px;
                 padding: 0 20px;
+                line-height: 1.6;
             `;
             tips.innerHTML = `
                 <p><strong>📱 下载指引</strong></p>
-                <p>1. 长按上方图片</p>
-                <p>2. 选择"保存到手机"</p>
-                <p>3. 图片将保存到您的相册</p>
+                <p>1. 长按上方图片3秒</p>
+                <p>2. 在弹出的菜单中选择"保存到手机"</p>
+                <p>3. 图片将自动保存到您的相册</p>
             `;
             
             const closeBtn = document.createElement('button');
             closeBtn.textContent = '关闭';
             closeBtn.style.cssText = `
-                margin-top: 20px;
-                padding: 10px 30px;
+                margin-top: 25px;
+                padding: 12px 40px;
                 background: #8B0000;
                 color: white;
                 border: none;
-                border-radius: 20px;
+                border-radius: 25px;
                 font-size: 16px;
                 cursor: pointer;
+                font-weight: bold;
             `;
             closeBtn.onclick = function() {
                 document.body.removeChild(imageContainer);
@@ -719,8 +794,17 @@
             imageContainer.appendChild(closeBtn);
             document.body.appendChild(imageContainer);
             
-            // 提示用户
-            alert('请长按弹出的证书图片，选择"保存到手机"进行下载');
+            alert('请长按弹出的证书图片保存到手机');
+        }
+
+        // 下载错误处理
+        function handleDownloadError() {
+            if (isWeChat || isMobile) {
+                alert('生成失败，建议您：\n1. 连接WiFi网络重试\n2. 长按证书区域截图保存\n3. 刷新页面后再次尝试');
+            } else {
+                alert('生成失败，请尝试截图保存证书或刷新页面重试');
+            }
+            document.getElementById('retryBtn').style.display = 'block';
         }
         
         // 分享证书功能
@@ -734,7 +818,7 @@
         
         // 重新生成新证书
         document.getElementById('newCertificate').addEventListener('click', function() {
-            if (confirm('确定要重新生成新证书吗？当前证书信息将会丢失。')) {
+            if (confirm('确定要重新开始吗？当前证书信息将会丢失。')) {
                 // 重置所有步骤
                 document.getElementById('step1').classList.add('active');
                 document.getElementById('step2').classList.remove('active');
@@ -746,6 +830,8 @@
                 
                 // 清空证书容器
                 document.getElementById('certificateForDownload').innerHTML = '';
+                document.getElementById('successMessage').style.display = 'none';
+                document.getElementById('retryBtn').style.display = 'none';
                 
                 // 回到第一步
                 document.getElementById('certificateSection').style.display = 'none';

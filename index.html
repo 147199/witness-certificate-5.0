@@ -6,6 +6,7 @@
     <title>同济大学对口支援井冈山大学20周年 - 见证者证书</title>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <style>
+        /* 之前的CSS样式保持不变 */
         * {
             margin: 0;
             padding: 0;
@@ -201,95 +202,29 @@
             border-radius: 15px;
             overflow: hidden;
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            background: #f9f3e9;
         }
         
-        /* 简化的证书样式 - 微信兼容 */
-        .certificate {
-            position: relative;
+        .certificate-template {
             width: 100%;
-            min-height: 500px;
-            background: #f9f3e9;
-            border: 8px solid #8B0000;
-            padding: 20px 15px;
-            text-align: center;
+            height: auto;
+            display: block;
         }
         
-        .certificate-header {
-            margin-bottom: 25px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #8B0000;
-        }
-        
-        .certificate-title {
-            font-size: 20px;
-            font-weight: bold;
-            color: #8B0000;
-            margin-bottom: 8px;
-        }
-        
-        .certificate-subtitle {
-            font-size: 16px;
-            color: #8B0000;
-            margin-bottom: 5px;
-        }
-        
-        .certificate-content {
-            margin: 25px 0;
-            padding: 0 10px;
-        }
-        
-        .certificate-name {
-            font-size: 24px;
-            font-weight: bold;
-            color: #8B0000;
-            margin: 20px 0;
-            padding: 8px 0;
-            border-bottom: 2px solid #8B0000;
-            display: inline-block;
-        }
-        
-        .certificate-text {
-            font-size: 15px;
-            line-height: 1.6;
-            color: #333;
-            margin: 12px 0;
-        }
-        
-        .certificate-footer {
-            margin-top: 30px;
-            display: flex;
-            justify-content: space-between;
-            padding: 0 10px;
-        }
-        
-        .certificate-date, .certificate-seal {
-            font-size: 14px;
-            color: #666;
-        }
-        
-        .certificate-seal {
-            font-weight: bold;
-        }
-        
-        /* 简单的装饰元素 */
-        .certificate-decoration {
+        /* 学生姓名位置 */
+        .student-name-overlay {
             position: absolute;
-            width: 60px;
-            height: 60px;
-            background: #8B0000;
-            opacity: 0.1;
-            border-radius: 50%;
-        }
-        
-        .decoration-1 {
-            top: 15px;
-            left: 15px;
-        }
-        
-        .decoration-2 {
-            bottom: 15px;
-            right: 15px;
+            top: 33%;
+            left: 41%;
+            transform: translateX(-50%);
+            font-size: 18px;
+            font-weight: bold;
+            color: #000;
+            text-align: center;
+            width: 60%;
+            background: transparent;
+            border: none;
+            font-family: "SimSun", "NSimSun", serif;
+            text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
         }
         
         .instructions {
@@ -393,36 +328,6 @@
             background: linear-gradient(90deg, #8B0000, #A52A2A);
             border-radius: 10px;
             transition: width 0.3s ease;
-        }
-        
-        /* 移动端优化 */
-        @media (max-width: 480px) {
-            .certificate {
-                min-height: 450px;
-                border-width: 6px;
-                padding: 15px 10px;
-            }
-            
-            .certificate-title {
-                font-size: 18px;
-            }
-            
-            .certificate-subtitle {
-                font-size: 15px;
-            }
-            
-            .certificate-name {
-                font-size: 22px;
-            }
-            
-            .certificate-text {
-                font-size: 14px;
-            }
-            
-            .certificate-decoration {
-                width: 40px;
-                height: 40px;
-            }
         }
     </style>
 </head>
@@ -544,10 +449,28 @@
     <script>
         // 存储用户信息
         let userInfo = {};
+        let preloadedImage = null;
         let isWeChat = /MicroMessenger/i.test(navigator.userAgent);
 
-        // 页面加载时初始化
+        // 预加载证书模板图片 - 在这里修改图片地址！
+        function preloadCertificateImage() {
+            preloadedImage = new Image();
+            // ================================
+            // 在这里修改您的证书模板图片地址！
+            // ================================
+            preloadedImage.src = 'https://i.ibb.co/xqQ1Wmdw/image.jpg'; // 替换为您的图片URL
+            preloadedImage.onload = function() {
+                console.log('证书模板图片预加载完成');
+            };
+            preloadedImage.onerror = function() {
+                console.error('证书模板图片加载失败');
+            };
+        }
+
+        // 页面加载时预加载图片
         window.addEventListener('load', function() {
+            preloadCertificateImage();
+            
             // 祝福语实时预览
             document.getElementById('blessing').addEventListener('input', function() {
                 const blessing = this.value || '祝福语将显示在这里...';
@@ -615,43 +538,28 @@
             // 模拟进度条
             simulateProgress();
             
-            // 生成证书HTML - 使用更简单的结构
+            // 立即开始生成证书
             const certificateContainer = document.getElementById('certificateForDownload');
-            certificateContainer.innerHTML = createCertificateHTML();
-            
-            // 记录生成时间
-            userInfo.certificateGenerated = new Date().toLocaleString('zh-CN');
-            
-            // 隐藏加载提示
-            setTimeout(hideLoading, 800);
-        }
-        
-        // 创建证书HTML - 简化版本，提高微信兼容性
-        function createCertificateHTML() {
-            return `
-                <div class="certificate">
-                    <div class="certificate-decoration decoration-1"></div>
-                    <div class="certificate-decoration decoration-2"></div>
-                    
-                    <div class="certificate-header">
-                        <h1 class="certificate-title">同济大学对口支援井冈山大学20周年</h1>
-                        <h2 class="certificate-subtitle">见证者证书</h2>
-                    </div>
-                    
-                    <div class="certificate-content">
-                        <p class="certificate-text">兹证明：</p>
-                        <div class="certificate-name">${userInfo.name}</div>
-                        <p class="certificate-text">作为同济大学对口支援井冈山大学20周年的见证者，</p>
-                        <p class="certificate-text">特发此证，以资纪念。</p>
-                        <p class="certificate-text">${userInfo.blessing}</p>
-                    </div>
-                    
-                    <div class="certificate-footer">
-                        <div class="certificate-date">${new Date().toLocaleDateString('zh-CN')}</div>
-                        <div class="certificate-seal">同济大学 & 井冈山大学</div>
+            certificateContainer.innerHTML = `
+                <div style="position: relative; width: 100%; margin: 0 auto;">
+                    <img src="${preloadedImage.src}" 
+                         alt="见证者证书模板" 
+                         style="width: 100%; height: auto; display: block;"
+                         onload="hideLoading()"
+                         onerror="handleImageError()">
+                    <div class="student-name-overlay">
+                        ${userInfo.name}
                     </div>
                 </div>
             `;
+            
+            // 如果图片已经预加载完成，立即隐藏加载提示
+            if (preloadedImage.complete) {
+                setTimeout(hideLoading, 500);
+            }
+            
+            // 记录生成时间
+            userInfo.certificateGenerated = new Date().toLocaleString('zh-CN');
         }
         
         // 模拟进度条
@@ -676,7 +584,13 @@
             document.getElementById('progressBar').style.width = '100%';
         }
         
-        // 下载证书功能 - 微信优化版本
+        // 图片加载失败的处理
+        function handleImageError() {
+            console.error('证书模板图片加载失败');
+            document.getElementById('loadingMessage').innerHTML = '<p>❌ 图片加载失败，请检查网络连接</p>';
+        }
+        
+        // 下载证书功能
         document.getElementById('downloadBtn').addEventListener('click', function() {
             const certificateContainer = document.getElementById('certificateForDownload');
             
@@ -687,35 +601,32 @@
                 <p style="font-size: 16px; margin-top: 10px;">正在生成高清证书图片...</p>
             `;
             
-            // 微信浏览器专用配置
-            const options = {
-                scale: 2, // 提高分辨率
-                useCORS: true,
-                allowTaint: false,
-                logging: false,
-                backgroundColor: '#f9f3e9',
-                width: certificateContainer.scrollWidth,
-                height: certificateContainer.scrollHeight,
-                // 微信浏览器特殊配置
-                foreignObjectRendering: false,
-                imageTimeout: 15000,
-                removeContainer: true
-            };
-            
             // 使用html2canvas将证书转换为图片
-            html2canvas(certificateContainer, options).then(canvas => {
+            html2canvas(certificateContainer, {
+                scale: isWeChat ? 1.2 : 1.5,
+                useCORS: true,
+                allowTaint: true,
+                logging: false,
+                backgroundColor: '#ffffff',
+                removeContainer: true,
+                async: true,
+                width: certificateContainer.scrollWidth,
+                height: certificateContainer.scrollHeight
+            }).then(canvas => {
                 // 隐藏加载提示
                 document.getElementById('loadingMessage').style.display = 'none';
                 
                 try {
+                    // 创建下载链接
+                    const link = document.createElement('a');
+                    link.download = `见证者证书-${userInfo.name}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    
                     if (isWeChat) {
-                        // 微信环境中，直接显示图片供用户长按保存
+                        // 微信环境中，创建图片显示供用户长按保存
                         handleWeChatDownload(canvas);
                     } else {
                         // 普通浏览器环境，直接下载
-                        const link = document.createElement('a');
-                        link.download = `见证者证书-${userInfo.name}.png`;
-                        link.href = canvas.toDataURL('image/png');
                         document.body.appendChild(link);
                         link.click();
                         document.body.removeChild(link);
@@ -737,9 +648,8 @@
             }).catch(error => {
                 console.error('证书生成失败:', error);
                 document.getElementById('loadingMessage').style.display = 'none';
-                // 微信环境下提供更友好的提示
                 if (isWeChat) {
-                    alert('生成失败，请尝试以下方法：\n1. 刷新页面重试\n2. 长按证书区域截图保存\n3. 更换网络环境后重试');
+                    alert('生成失败，请长按证书区域截图保存');
                 } else {
                     alert('生成失败，请尝试截图保存证书');
                 }
@@ -756,19 +666,18 @@
                 left: 0;
                 width: 100%;
                 height: 100%;
-                background: rgba(0,0,0,0.9);
+                background: rgba(0,0,0,0.8);
                 display: flex;
                 flex-direction: column;
                 align-items: center;
                 justify-content: center;
                 z-index: 10000;
-                padding: 20px;
             `;
             
             const image = new Image();
             image.src = canvas.toDataURL('image/png');
             image.style.cssText = `
-                max-width: 100%;
+                max-width: 90%;
                 max-height: 70%;
                 border-radius: 10px;
                 box-shadow: 0 0 20px rgba(255,255,255,0.3);
@@ -781,7 +690,6 @@
                 margin-top: 20px;
                 font-size: 16px;
                 padding: 0 20px;
-                line-height: 1.5;
             `;
             tips.innerHTML = `
                 <p><strong>📱 下载指引</strong></p>
@@ -794,14 +702,13 @@
             closeBtn.textContent = '关闭';
             closeBtn.style.cssText = `
                 margin-top: 20px;
-                padding: 12px 40px;
+                padding: 10px 30px;
                 background: #8B0000;
                 color: white;
                 border: none;
-                border-radius: 25px;
+                border-radius: 20px;
                 font-size: 16px;
                 cursor: pointer;
-                font-weight: bold;
             `;
             closeBtn.onclick = function() {
                 document.body.removeChild(imageContainer);
@@ -839,7 +746,6 @@
                 
                 // 清空证书容器
                 document.getElementById('certificateForDownload').innerHTML = '';
-                document.getElementById('successMessage').style.display = 'none';
                 
                 // 回到第一步
                 document.getElementById('certificateSection').style.display = 'none';
